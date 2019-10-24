@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+   <!--Author: Siwei Wang
+       Student ID: 201376768
+     -->
+   <head>
+      <title>Game</title>
+      <style>
+         td { border: 1px solid black;
+              width: 3em;
+              height: 3em;
+              margin: 0em;
+          	  text-align: center;
+              vertical-align: middle;
+         }
+         div {
+           border: 1px solid black;
+           width: 33em;
+           height: 8em;
+           margin: 0em;
+         }
+         p.RedBG  { background-color: #f00; }
+         td.BlueBG  { background-color: white; }
+      </style>
+   </head>
+   <body>
+      <div id="m1"></div>
+      <table id="t1"></table>
+      <p id="m2"></p>
+      <button id="b1">START</button> </br>
+      <button id="b2">END</button>
+      <script>
+         // initialise variables
+         // board use to record the information of each cell
+         var board = [[0,0,0,0,0,0,0,0,0,0],
+                      [0,0,0,0,0,0,0,0,0,0],
+                      [0,0,0,0,0,0,0,0,0,0],
+                      [0,0,0,0,0,0,0,0,0,0],
+                      [0,0,0,0,0,0,0,0,0,0],
+                      [0,0,0,0,0,0,0,0,0,0],
+                      [0,0,0,0,0,0,0,0,0,0],
+                      [0,0,0,0,0,0,0,0,0,0],
+                      [0,0,0,0,0,0,0,0,0,0],
+                      [0,0,0,0,0,0,0,0,0,0]];
+         // the following four variables is used for recording hero information
+         // heroNum is the number of hero, heroX and heroY is hero's position
+         var heroNum = 0;
+         var heroX = 0;
+         var heroY = 0;
+         var heroAlive = true;
+         // treasureNum represents the number of treasure
+         var treasureNum = 0;
+         // the following three variables represent information of play stage
+         var round = 1;
+         var heroScore=0;
+         var killerScore=0;
+
+         /* the code for numToLetter function is referenced on ullrich
+         (http://cgi.csc.liv.ac.uk/~ullrich/COMP519/examples/jsBoard.html)*/
+         function numToLetter(num) {
+            switch (parseInt(num)) {
+               case 0: return " "
+               case 1: return "$"
+               case 2: return "O"
+               case 3: return "H"
+               case 4: return "K"
+               case 11: return "$"
+               case 12: return "$"
+               case 13: return "$"
+               case 14: return "$"
+               case 15: return "$"
+               case 16: return "$"
+               case 17: return "$"
+               case 18: return "$"
+               case 19: return "$"
+            }
+         }
+
+         // clear message
+         function clearMessage() {
+            message = document.getElementById("m2");
+         }
+         // show message
+         function showMessage(message,style) {
+            m = document.getElementById("m2");
+            m.innerHTML = message;
+            m.style.display = "block";
+            m.className = style;
+         }
+         // show killer's and hero's score
+         function showScores() {
+           score = document.getElementById("m1");
+           score.innerHTML = "Scores </br></br>"
+                            + "Round " + round + "</br>"
+                            + "Hero Score: "+ heroScore + "</br>"
+                            + "Killer Score: " + killerScore;
+           score.style.display = "block";
+
+         }
+         // show instruction for setup
+         function showInstruction() {
+           score = document.getElementById("m1");
+           score.innerHTML = "Instruction for setup </br>" +
+                "Clicking on a cell, press a number between 0 to 9,"+
+                "a treasure will be placed</br>" +
+                "Clicking on a cell, press O, an obstacle will be placed</br>" +
+                "Clicking on a cell, press H, the hero will be placed</br>" +
+                "Clicking on a cell, press K, a killer will be placed</br>" +
+                "When finish setup, click start button";
+           score.style.display = "block";
+         }
+
+         // when user click a cell, this function will be invoked
+         function set(x,y,event){
+           // if a cell has already been occupied, show a message
+           if (board[y][x] > 0) {
+              showMessage("Grid position ["+x+","+y+"] already occupied","RedBG");
+           } else {
+              // else show the position of current cell which has been selected
+              showMessage("You have selected cell ["+x+","+y+"]");
+              // Keyboard event
+              setKeyboard(x,y,event);
+           }
+         }
+
+         function setKeyboard(x,y,event) {
+           // keydown event
+           document.onkeydown = function(e){
+             var e = e||window.event;
+             var code = e.which||e.keyCode
+             var keyvalue = String.fromCharCode(code);
+             var number = board[y][x];
+             // judge which key has been pressed
+             if (number == 0) {
+               // press 0 to 9
+               if (code >= 49 && code <= 57) {
+                 treasureNum++;
+                 console.log("treasure number : " + treasureNum)
+                 showMessage("A treasure has been placed at ["+x+","+y+"]. (value " + keyvalue + ")");
+                 number = 1;
+               } else if (code == 79) {
+                 // press O
+                 showMessage("An obstacle has been placed at ["+x+","+y+"].");
+                 number = 2;
+               } else if (code == 72) {
+                 // press H
+                 if (heroNum == 1) {
+                   showMessage("ERROR: Hero has already existed!","RedBG");
+                 } else {
+                   showMessage("A hero has been placed at ["+x+","+y+"].");
+                   heroNum = 1;
+                   heroX = x;
+                   heroY = y;
+                   number = 3;
+                 }
+               } else if (code == 75) {
+                 // press Killer
+                 showMessage("A killer has been placed at ["+x+","+y+"].");
+                 number = 4;
+               } else {
+                 // press invalid key
+                 showMessage("ERROR: Invalid key! Please enter 1 to 9,'o','k','h'","RedBG");
+               }
+               console.log("number = "+number);
+               document.getElementById(x+""+y).innerHTML = numToLetter(number);
+               // store the value of a treasure
+               if (number == 1) {
+                 board[y][x] = 1+keyvalue;
+                 console.log("--->$$$" + board[y][x]);
+               } else {
+                 board[y][x] = number;
+               }
+             } else {
+               showMessage("ERROR: Cannot change!","RedBG");
+             }
+
+
+             //return number
+          }
+         }
+
+         // play stage
+         function play() {
+            // judge whether a hero has been placed
+            if (heroNum == 0) {
+              alert("There must be a hero!");
+            } else {
+              // delete old table, build a new table
+              deleteTable();
+              initTable();
+              showScores();
+              console.log("game start!")
+              // if there is no treasure, end the game
+              if (treasureNum == 0) {
+                var x = 1;
+                end(x);
+              }
+              // hero' turn
+              hero();
+            }
+         }
+
+         // operate hero
+         function hero() {
+           document.onkeydown = function(e){
+             if (heroAlive) {
+               var e = e||window.event;
+               var code = e.which||e.keyCode;
+               var number = 0;
+               var tmpX = heroX;
+               var tmpY = heroY;
+
+               // press w a s d, hero move to different position
+               if (code == 87) {
+                 // w
+                 console.log("UP");
+                 tmpY = tmpY-1;
+               } else if (code == 65) {
+                 // a
+                 console.log("LEFT");
+                 tmpX = tmpX-1;
+               } else if (code == 83) {
+                 // s
+                 console.log("DOWN");
+                 tmpY = tmpY+1;
+               } else if (code == 68) {
+                 // d
+                 console.log("RIGHT");
+                 tmpX = tmpX+1;
+               } else {
+                 // invalid key, no movement
+                 showMessage("ERROR: Invalid key! Please press 'w','a','s','d'","RedBG");
+                 return 0;
+               }
+
+               //validate hero location
+               if (heroLocation(tmpX,tmpY)) {
+                 board[heroY][heroX] = 0;
+                 board[tmpY][tmpX] = 3;
+                 document.getElementById(heroX+""+heroY).innerHTML = numToLetter(0);
+                 document.getElementById(tmpX+""+tmpY).innerHTML = numToLetter(3);
+                 heroX = tmpX;
+                 heroY = tmpY;
+                 showMessage("Hero move to ["+heroX+","+heroY+"]")
+                 if (treasureNum == 0) {
+                   end();
+                 } else {
+                   // killer's turn
+                   killer();
+                   round++;
+                   showScores();
+                 }
+               }
+             }
+           }
+         }
+
+         // judge hero location and relative event
+         function heroLocation(x,y) {
+           //treasure set as 11-19
+           if (x>=0 && x<10 && y>=0 && y<10) {
+             var locationValue = board[y][x];
+             if (locationValue == 2) {
+               showMessage("Here is an obstacle, cannot move","RedBG");
+               killer();
+               round++;
+               showScores();
+               return false;
+             } else if (locationValue == 4) {
+               document.getElementById(heroX+""+heroY).innerHTML = numToLetter(0);
+               document.getElementById(x+""+y).innerHTML = numToLetter(4);
+               heroAlive = false;
+               // end the game
+               end();
+               return false;
+             } else if (locationValue > 10) {
+               var treasureV = locationValue-10;
+               heroScore += treasureV;
+               showMessage("Find a treasure!");
+               showScores();
+               treasureNum--;
+               return true;
+             } else {
+               return true;
+             }
+           } else {
+             // boundary
+             showMessage("Here is the boundary, cannot move","RedBG");
+             killer();
+             round++;
+             showScores();
+             return false;
+           }
+
+         }
+
+         // killer function
+          function killer() {
+          // store killers' position
+          var killerX = [];
+          var killerY = [];
+            for (var i=0; i<10; i++) {
+              for (var j=0; j<10; j++){
+                if (board[j][i] == 4) {
+                  killerX.push(i);
+                  killerY.push(j);
+
+                }
+              }
+            }
+            console.log("killer number:" + killerX.length)
+            // move each killer
+            for (var i=0;i<killerX.length;i++){
+              killerMove(killerX[i],killerY[i]);
+            }
+          }
+
+         function killerMove(x,y) {
+           //find hero
+           if (moveToHero(x,y)) {
+             //find treasure
+           } else if (moveToTreasure(x,y)) {
+
+           } else {
+             moveAlgorithm(x,y);
+           }
+         }
+         //find hero
+         function moveToHero(x,y) {
+           var arrayX = [x-1,x,x+1];
+           var arrayY = [y-1,y,y+1];
+           var tmpX;
+           var tmpY;
+           console.log("========Hero Hunter======");
+           for (var i=0;i<3;i++) {
+             for (var j=0;j<3;j++) {
+                if (i==1&&j==1) {
+                } else {
+                  tmpX = arrayX[i]; tmpY = arrayY[j];
+                  // console.log("--->"+x+","+y);
+                  // console.log("--->"+i+","+j);
+                  // console.log("--->"+tmpX+","+tmpY);
+                  if (tmpX >= 0 && tmpY >= 0 && tmpX < 10 && tmpY < 10) {
+                    var value = board[tmpY][tmpX];
+                    if (board[tmpY][tmpX] == 3) {
+                      board[y][x] = 0;
+                      board[tmpY][tmpX] = 4;
+                      document.getElementById(x+""+y).innerHTML = numToLetter(0);
+                      document.getElementById(tmpX+""+tmpY).innerHTML = numToLetter(4);
+                      heroAlive = false;
+                      showScores();
+                      round--;
+                      end();
+                      return true;
+                    }
+                  }
+                }
+              }
+            }
+            return false;
+          }
+          //find treasure
+         function moveToTreasure(x,y) {
+           var arrayX = [x-1,x,x+1];
+           var arrayY = [y-1,y,y+1];
+           var tmpX;
+           var tmpY;
+           console.log("========Teasure Hunter======");
+
+           for (var i=0;i<3;i++) {
+             for (var j=0;j<3;j++) {
+                if (i==1&&j==1) {
+                } else {
+                  tmpX = arrayX[i]; tmpY = arrayY[j];
+                  if (tmpX >= 0 && tmpY >= 0 && tmpX < 10 && tmpY < 10) {
+                    var value = board[tmpY][tmpX];
+
+                    if (board[tmpY][tmpX] > 10) {
+
+                      var treasureV = board[tmpY][tmpX]-10;
+                      killerScore += treasureV;
+                      showScores();
+                      board[y][x] = 0;
+                      board[tmpY][tmpX] = 4;
+                      document.getElementById(x+""+y).innerHTML = numToLetter(0);
+                      document.getElementById(tmpX+""+tmpY).innerHTML = numToLetter(4);
+                      treasureNum--;
+                      return true;
+                    }
+                  }
+                }
+              }
+            }
+            return false;
+          }
+
+          // killer move moveAlgorithm
+         function moveAlgorithm(x,y) {
+           console.log("========General move======");
+           var arrayX = [x-1,x,x+1];
+           var arrayY = [y-1,y,y+1];
+           var tmpX = x;
+           var tmpY = y;
+           var min = 9999;
+
+           for (var i=0;i<3;i++) {
+             for (var j=0;j<3;j++) {
+               //console.log("loop "+i+","+j);
+                if (i==1&&j==1) {
+                } else {
+                  if (arrayX[i] >= 0 && arrayY[j] >= 0 && arrayX[i] < 10 && arrayY[j] < 10 ) {
+                    var value = board[arrayY[j]][arrayX[i]];
+                    if (value !=2 && value !=4)  {
+                      var distance = Math.pow((arrayX[i]-heroX),2)+Math.pow((arrayY[j]-heroY),2);
+                      if (distance<min) {
+                        min = distance;
+                        tmpX = arrayX[i]; tmpY = arrayY[j];
+                      }
+                    }
+                  }
+                }
+              }
+           }
+
+           board[y][x] = 0;
+           board[tmpY][tmpX] = 4;
+
+           document.getElementById(x+""+y).innerHTML = numToLetter(0);
+           document.getElementById(tmpX+""+tmpY).innerHTML = numToLetter(4);
+         }
+
+         // end stage
+         function end(x) {
+           console.log("======End stage======");
+           var b1 = document.getElementById("b1");
+           var b2 = document.getElementById("b2");
+           b1.parentNode.removeChild(b1);
+           b2.parentNode.removeChild(b2);
+           // print outcome
+           if (heroAlive) {
+             if(x==1){
+               alert("Hero Win ;)")
+               showMessage("Hero win!");
+             } else {
+               if (heroScore > killerScore) {
+                 alert("Hero Win :)");
+                 showMessage("Hero win!");
+               } else if (heroScore == killerScore){
+                 alert("Draw Game");
+                 showMessage("Draw Game");
+               } else {
+                 alert("Killer Robots Win :( ");
+                 showMessage("Killer robots win!");
+               }
+             }
+           } else {
+             alert("Unfortunatly, Hero Dead :( \n  Killer Robots Win!!");
+             showMessage("Killer robots win!");
+           }
+           heroAlive = false;
+         }
+         // delete table
+         function deleteTable () {
+           var t = document.getElementById('t1');
+           for(var i = t.rows.length-1 ; i>=0; i--){
+             t.deleteRow(i);
+           }
+         }
+        // create new table
+         function initTable() {
+           for (y=0; y<board.length; y++) {
+               var tr = document.createElement("tr");
+               table.appendChild(tr);
+               for (x=0; x<board[y].length; x++) {
+                  var td  = document.createElement("td");
+                  td.id = x+""+y;
+                  var txt = document.createTextNode(numToLetter(board[y][x]));
+                  td.appendChild(txt);
+                  tr.appendChild(td);
+               }
+            }
+            endButton = document.getElementById("b2");
+            var b = endButton.addEventListener("click",end,false);
+
+         }
+
+          // setup stage
+         function initSetting(table) {
+           // show the rule of this Game
+           showInstruction();
+           for (y=0; y<board.length; y++) {
+               var tr = document.createElement("tr");
+               table.appendChild(tr);
+               for (x=0; x<board[y].length; x++) {
+
+                  var td  = document.createElement("td");
+                  td.id = x+""+y;
+                  var txt = document.createTextNode(numToLetter(board[y][x]));
+                  td.appendChild(txt);
+                  td.addEventListener("click",set.bind(null,x,y),false);
+
+                  tr.appendChild(td);
+               }
+            }
+            start = document.getElementById("b1");
+            var a = start.addEventListener("click",play,false);
+
+          }
+
+         table = document.getElementById('t1');
+         initSetting(table);
+      </script>
+   </body>
+</html>
